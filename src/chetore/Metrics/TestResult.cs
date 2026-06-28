@@ -1,0 +1,1 @@
+public record TestResult(string Input, string Actual_output, string Expected_output, float Score, bool IsPassed, string? Reason, object? MetaData);
