@@ -1,1 +1,3 @@
+namespace Chetore.Metrics;
+
 public record LLMTestCase(string Query, string ActualAnswer, string ExeptedAnswer, object? MetaData=null);

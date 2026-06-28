@@ -1,3 +1,5 @@
+namespace Chetore.Metrics;
+
 public class BaseMetric
 {
     public virtual Task<EvalutionResult> EvaluteAsync(IEnumerable<LLMTestCase> testCases, CancellationToken cancellationToken = default)

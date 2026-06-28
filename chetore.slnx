@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/chetore/chetore.csproj" />
     <Project Path="src/test_console/test_console.csproj" />
+    <Project Path="src/chetore/Chetore.csproj" />
   </Folder>
 </Solution>

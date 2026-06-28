@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\chetore\chetore.csproj" />
+    <ProjectReference Include="..\chetore\Chetore.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -33,7 +33,7 @@ public class AnswerRelevancyMetric : BaseMetric
     private static string LoadDefaultPrompt()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = "chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
+        var resourceName = "Chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new FileNotFoundException($"Embedded resource '{resourceName}' not found.");
         using var reader = new StreamReader(stream);
@@ -64,13 +64,15 @@ public class AnswerRelevancyMetric : BaseMetric
 
     private async Task<TestResult> EvaluateSingle(LLMTestCase testCase, CancellationToken cancellationToken = default)
     {
+
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
             var filledPrompt = _prompt
                 .Replace("{{$query}}", testCase.Query)
                 .Replace("{{$answer}}", testCase.ActualAnswer);
-            var response = await _kernel.InvokePromptAsync(filledPrompt, cancellationToken: cancellationToken);
+            var response = await _kernel.InvokePromptAsync(filledPrompt,
+            cancellationToken: cancellationToken);
             var content = response.ToString();
 
             var (score, reason) = ParseResponse(content);
