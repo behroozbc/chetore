@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel;
@@ -24,28 +25,20 @@ public class AnswerRelevancyMetric : BaseMetric
         _threshold = threshold;
         _includeReason = includeReason;
         _prompt = string.IsNullOrEmpty(prompt)
-            ? DefaultPrompt
+            ? LoadDefaultPrompt()
             : prompt;
         _maxConcurrency = maxConcurrency > 0 ? maxConcurrency : 5;
     }
 
-    private const string DefaultPrompt = """
-        You are an expert evaluator of answer relevancy.
-        Given a user query and an answer, evaluate how relevant the answer is to the query.
-        Consider:
-        - Does the answer directly address the query?
-        - Does the answer contain information that is related to the query?
-        - Does the answer avoid irrelevant or off-topic content?
-
-        Return a JSON object with the following structure:
-        {
-            "score": <float between 0.0 and 1.0>,
-            "reason": "<brief explanation of the score>"
-        }
-
-        Query: {{$query}}
-        Answer: {{$answer}}
-        """;
+    private static string LoadDefaultPrompt()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var resourceName = "chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new FileNotFoundException($"Embedded resource '{resourceName}' not found.");
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
 
     public override async Task<EvalutionResult> EvaluteAsync(IEnumerable<LLMTestCase> testCases, CancellationToken cancellationToken = default)
     {

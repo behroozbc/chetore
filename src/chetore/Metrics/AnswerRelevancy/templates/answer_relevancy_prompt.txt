@@ -1,0 +1,15 @@
+You are an expert evaluator of answer relevancy.
+Given a user query and an answer, evaluate how relevant the answer is to the query.
+Consider:
+- Does the answer directly address the query?
+- Does the answer contain information that is related to the query?
+- Does the answer avoid irrelevant or off-topic content?
+
+Return a JSON object with the following structure:
+{
+    "score": <float between 0.0 and 1.0>,
+    "reason": "<brief explanation of the score>"
+}
+
+Query: {{$query}}
+Answer: {{$answer}}
