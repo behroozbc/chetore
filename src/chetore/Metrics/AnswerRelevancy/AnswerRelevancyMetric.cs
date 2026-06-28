@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel;
+using ShellProgressBar;
 
 namespace Chetore.Metrics.AnswerRelevancy;
 
@@ -43,6 +44,7 @@ public class AnswerRelevancyMetric : BaseMetric
     public override async Task<EvalutionResult> EvaluteAsync(IEnumerable<LLMTestCase> testCases, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(testCases);
+        using ProgressBar progressBar = new (testCases.Count(), "Evalute Answer Relevancy Metric");
 
         var testResults = new ConcurrentBag<TestResult>();
 
@@ -52,6 +54,7 @@ public class AnswerRelevancyMetric : BaseMetric
             CancellationToken = cancellationToken
         }, async (tc, ct) =>
         {
+            progressBar.Tick();
             var result = await EvaluateSingle(tc, ct);
             testResults.Add(result);
         });
