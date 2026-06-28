@@ -71,9 +71,20 @@ public class AnswerRelevancyMetric : BaseMetric
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            var contextInstruction = string.IsNullOrEmpty(testCase.Context)
+                ? string.Empty
+                : $"The answer was generated based on the following context:\n{testCase.Context}\n\nEvaluate whether the answer correctly uses the provided context and is relevant to the query.";
+
+            var actualAnswerSection = string.IsNullOrEmpty(testCase.ActualAnswer)
+                ? string.Empty
+                : $"Actual Answer: {testCase.ActualAnswer}";
+
             var filledPrompt = _prompt
                 .Replace("{{$query}}", testCase.Query)
-                .Replace("{{$answer}}", testCase.ActualAnswer);
+                .Replace("{{$answer}}", testCase.ActualAnswer)
+                .Replace("{{$context_instruction}}", contextInstruction)
+                .Replace("{{$actual_answer_section}}", actualAnswerSection);
             var response = await _kernel.InvokePromptAsync(filledPrompt,
             cancellationToken: cancellationToken);
             var content = response.ToString();

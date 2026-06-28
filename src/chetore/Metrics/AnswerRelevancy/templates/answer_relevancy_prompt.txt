@@ -5,6 +5,8 @@ Consider:
 - Does the answer contain information that is related to the query?
 - Does the answer avoid irrelevant or off-topic content?
 
+{{$context_instruction}}
+
 Return a JSON object with the following structure:
 {
     "score": <float between 0.0 and 1.0>,
@@ -12,4 +14,5 @@ Return a JSON object with the following structure:
 }
 
 Query: {{$query}}
-Answer: {{$answer}}
+Excepted Answer: {{$actual_answer_section}}
+{{$answer}}
