@@ -1,68 +1,27 @@
-using System.Collections.Concurrent;
-using System.Reflection;
+
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel;
-using ShellProgressBar;
+
 
 namespace Chetore.Metrics.AnswerRelevancy;
 
 public class AnswerRelevancyMetric : BaseMetric
 {
-    private readonly Kernel _kernel;
-    private readonly float _threshold;
-    private readonly bool _includeReason;
-    private readonly string _prompt;
-    private readonly int _maxConcurrency;
+    private const string PromptResourceName = "Chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
+    protected override string MetricName => "AnswerRelevancy";
 
     public AnswerRelevancyMetric(
         Kernel kernel,
         float threshold = 0.5f,
         bool includeReason = false,
         string prompt = "",
-        int maxConcurrency = 5)
+        int maxConcurrency = 5) : base(kernel, threshold, includeReason, prompt, maxConcurrency)
     {
-        _kernel = kernel;
-        _threshold = threshold;
-        _includeReason = includeReason;
-        _prompt = string.IsNullOrEmpty(prompt)
-            ? LoadDefaultPrompt()
-            : prompt;
-        _maxConcurrency = maxConcurrency > 0 ? maxConcurrency : 5;
-    }
-
-    private static string LoadDefaultPrompt()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = "Chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
-        using var stream = assembly.GetManifestResourceStream(resourceName)
-            ?? throw new FileNotFoundException($"Embedded resource '{resourceName}' not found.");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
-
-    public override async Task<EvalutionResult> EvaluteAsync(IEnumerable<LLMTestCase> testCases, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(testCases);
-        using ProgressBar progressBar = new (testCases.Count(), "Evalute Answer Relevancy Metric");
-
-        var testResults = new ConcurrentBag<TestResult>();
-
-        await Parallel.ForEachAsync(testCases, new ParallelOptions
+        if (string.IsNullOrEmpty(prompt))
         {
-            MaxDegreeOfParallelism = _maxConcurrency,
-            CancellationToken = cancellationToken,
-        }, async (tc, ct) =>
-        {
-            var result = await EvaluateSingleAsync(tc, ct);
-            testResults.Add(result);
-            progressBar.Tick();
-        });
-
-        return new EvalutionResult(
-            Metric: "AnswerRelevancy",
-            TestResults: testResults
-        );
+            _prompt = LoadPromptFromResource(PromptResourceName);
+        }
     }
 
     public override async Task<TestResult> EvaluateSingleAsync(LLMTestCase testCase, CancellationToken cancellationToken = default)
@@ -85,7 +44,7 @@ public class AnswerRelevancyMetric : BaseMetric
                 .Replace("{{$context_instruction}}", contextInstruction)
                 .Replace("{{$actual_answer_section}}", actualAnswerSection);
 
-            var response = await _kernel.InvokePromptAsync(filledPrompt, cancellationToken: cancellationToken);
+            var response = await kernel.InvokePromptAsync(filledPrompt, cancellationToken: cancellationToken);
             var content = response.ToString();
 
             var (score, reason) = ParseResponse(content);
@@ -108,7 +67,7 @@ public class AnswerRelevancyMetric : BaseMetric
                 Expected_output: testCase.ExeptedAnswer,
                 Score: 0.0f,
                 IsPassed: false,
-                Reason:  $"Evaluation error: {ex.Message}" ,
+                Reason: $"Evaluation error: {ex.Message}",
                 MetaData: testCase.MetaData
             );
         }
