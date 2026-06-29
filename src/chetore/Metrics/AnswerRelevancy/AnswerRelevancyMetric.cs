@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel;
+using Polly;
+using Polly.Retry;
 using ShellProgressBar;
 
 namespace Chetore.Metrics.AnswerRelevancy;
@@ -14,13 +16,15 @@ public class AnswerRelevancyMetric : BaseMetric
     private readonly bool _includeReason;
     private readonly string _prompt;
     private readonly int _maxConcurrency;
+    private readonly ResiliencePipeline _retryPipeline;
 
     public AnswerRelevancyMetric(
         Kernel kernel,
         float threshold = 0.5f,
         bool includeReason = false,
         string prompt = "",
-        int maxConcurrency = 5)
+        int maxConcurrency = 5,
+        RetryConfig? retryConfig = null)
     {
         _kernel = kernel;
         _threshold = threshold;
@@ -29,6 +33,26 @@ public class AnswerRelevancyMetric : BaseMetric
             ? LoadDefaultPrompt()
             : prompt;
         _maxConcurrency = maxConcurrency > 0 ? maxConcurrency : 5;
+        _retryPipeline = BuildRetryPipeline(retryConfig ?? new RetryConfig());
+    }
+
+    private static ResiliencePipeline BuildRetryPipeline(RetryConfig config)
+    {
+        return new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                MaxRetryAttempts = config.MaxRetryAttempts,
+                Delay = config.RetryDelay,
+                BackoffType = DelayBackoffType.Constant,
+                ShouldHandle = new PredicateBuilder().Handle<HttpOperationException>(
+                    ex => ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests),
+                OnRetry = args =>
+                {
+                    Console.WriteLine($"[Rate Limit] HTTP 429 received. Retrying in {config.RetryDelay.TotalSeconds} seconds... (attempt {args.AttemptNumber + 1}/{config.MaxRetryAttempts})");
+                    return ValueTask.CompletedTask;
+                }
+            })
+            .Build();
     }
 
     private static string LoadDefaultPrompt()
@@ -54,9 +78,9 @@ public class AnswerRelevancyMetric : BaseMetric
             CancellationToken = cancellationToken
         }, async (tc, ct) =>
         {
-            progressBar.Tick();
             var result = await EvaluateSingle(tc, ct);
             testResults.Add(result);
+            progressBar.Tick();
         });
 
         return new EvalutionResult(
@@ -67,7 +91,6 @@ public class AnswerRelevancyMetric : BaseMetric
 
     private async Task<TestResult> EvaluateSingle(LLMTestCase testCase, CancellationToken cancellationToken = default)
     {
-
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -85,9 +108,14 @@ public class AnswerRelevancyMetric : BaseMetric
                 .Replace("{{$answer}}", testCase.ActualAnswer)
                 .Replace("{{$context_instruction}}", contextInstruction)
                 .Replace("{{$actual_answer_section}}", actualAnswerSection);
-            var response = await _kernel.InvokePromptAsync(filledPrompt,
-            cancellationToken: cancellationToken);
-            var content = response.ToString();
+
+            var content = await _retryPipeline.ExecuteAsync(
+                async ct =>
+                {
+                    var response = await _kernel.InvokePromptAsync(filledPrompt, cancellationToken: ct);
+                    return response.ToString();
+                },
+                cancellationToken);
 
             var (score, reason) = ParseResponse(content);
 
@@ -109,7 +137,7 @@ public class AnswerRelevancyMetric : BaseMetric
                 Expected_output: testCase.ExeptedAnswer,
                 Score: 0.0f,
                 IsPassed: false,
-                Reason: _includeReason ? $"Evaluation error: {ex.Message}" : null,
+                Reason:  $"Evaluation error: {ex.Message}" ,
                 MetaData: testCase.MetaData
             );
         }
