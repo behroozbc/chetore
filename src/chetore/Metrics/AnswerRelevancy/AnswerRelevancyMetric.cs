@@ -78,7 +78,7 @@ public class AnswerRelevancyMetric : BaseMetric
             CancellationToken = cancellationToken
         }, async (tc, ct) =>
         {
-            var result = await EvaluateSingle(tc, ct);
+            var result = await EvaluateSingleAsync(tc, ct);
             testResults.Add(result);
             progressBar.Tick();
         });
@@ -89,7 +89,7 @@ public class AnswerRelevancyMetric : BaseMetric
         );
     }
 
-    private async Task<TestResult> EvaluateSingle(LLMTestCase testCase, CancellationToken cancellationToken = default)
+    public override async Task<TestResult> EvaluateSingleAsync(LLMTestCase testCase, CancellationToken cancellationToken = default)
     {
         try
         {

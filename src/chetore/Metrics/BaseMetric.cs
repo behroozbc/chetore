@@ -6,4 +6,8 @@ public class BaseMetric
     {
         throw new NotImplementedException();
     }
+    public virtual Task<TestResult> EvaluateSingleAsync(LLMTestCase testCase, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 }
