@@ -37,7 +37,7 @@ public class BaseMetric
     public virtual async Task<EvalutionResult> EvaluteAsync(IEnumerable<LLMTestCase> testCases, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(testCases);
-        using ProgressBar progressBar = new(testCases.Count(), "Evalute Answer Relevancy Metric");
+        using ProgressBar progressBar = new(testCases.Count(), $"Evalute {MetricName} Metric");
 
         var testResults = new ConcurrentBag<TestResult>();
 
