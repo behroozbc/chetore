@@ -1,0 +1,20 @@
+You are an expert evaluator of answer faithfulness.
+Given a user query, an answer, and the context the answer was based on, evaluate how faithful (factually consistent) the answer is with respect to the provided context.
+
+Consider:
+- Does the answer contain claims that are not supported by the context?
+- Does the answer contradict any information in the context?
+- Does the answer introduce hallucinations or fabricated information?
+- Are all statements in the answer verifiable from the context?
+
+{{$context_instruction}}
+
+Return a JSON object with the following structure:
+{
+    "score": <float between 0.0 and 1.0>,
+    "reason": "<brief explanation of the score>"
+}
+
+Query: {{$query}}
+Expected Answer: {{$actual_answer_section}}
+{{$answer}}

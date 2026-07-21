@@ -1,14 +1,16 @@
-
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using Chetore.Metrics;
 using Microsoft.SemanticKernel;
 
-namespace Chetore.Metrics.AnswerRelevancy;
+namespace Chetore.Metrics.Faithfulness;
 
-public class AnswerRelevancyMetric : BaseMetric
+public class FaithfulnessMetric : BaseMetric
 {
-    private const string PromptResourceName = "Chetore.Metrics.AnswerRelevancy.templates.answer_relevancy_prompt.txt";
-    protected override string MetricName => "AnswerRelevancy";
+    private const string PromptResourceName = "Chetore.Metrics.Faithfulness.templates.faithfulness_prompt.txt";
+    protected override string MetricName => "Faithfulness";
 
-    public AnswerRelevancyMetric(
+    public FaithfulnessMetric(
         Kernel kernel,
         float threshold = 0.5f,
         bool includeReason = false,
@@ -29,7 +31,7 @@ public class AnswerRelevancyMetric : BaseMetric
 
             var contextInstruction = string.IsNullOrEmpty(testCase.Context)
                 ? string.Empty
-                : $"The answer was generated based on the following context:\n{testCase.Context}\n\nEvaluate whether the answer correctly uses the provided context and is relevant to the query.";
+                : $"The answer was generated based on the following context:\n{testCase.Context}\n\nEvaluate whether the answer is faithful to the provided context and does not contain hallucinations or unsupported claims.";
 
             var actualAnswerSection = string.IsNullOrEmpty(testCase.ActualAnswer)
                 ? string.Empty

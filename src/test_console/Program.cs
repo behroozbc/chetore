@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Chetore.Metrics;
 using Chetore.Metrics.AnswerRelevancy;
+using Chetore.Metrics.Faithfulness;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
@@ -96,31 +97,54 @@ var metric = new AnswerRelevancyMetric(kernel, threshold: 0.7f, includeReason: f
 // Build test cases
 var testCases = entries.Select(e => new LLMTestCase(
     Query: e.question,
-    ActualAnswer: e.without_context_response,
+    ActualAnswer: e.with_context_response,
     ExeptedAnswer: string.Empty,
-    Context: e.docs_content+e.prerequisitesStatus
+    Context: e.docs_content + e.prerequisitesStatus
 ));
 
-// Evaluate
-Console.WriteLine("Evaluating answer relevancy...\n");
-var evalResult = await metric.EvaluteAsync(testCases);
+// ──────────────────────────────────────────────
+// 1. Answer Relevancy Evaluation
+// ──────────────────────────────────────────────
+Console.WriteLine("═══════════════════════════════════════");
+Console.WriteLine("  Answer Relevancy Evaluation");
+Console.WriteLine("═══════════════════════════════════════\n");
+var relevancyResult = await metric.EvaluteAsync(testCases);
+PrintResults("Answer Relevancy", relevancyResult);
 
-var testResults = evalResult.TestResults.ToList();
+// ──────────────────────────────────────────────
+// 2. Faithfulness Evaluation
+// ──────────────────────────────────────────────
+Console.WriteLine("\n═══════════════════════════════════════");
+Console.WriteLine("  Faithfulness Evaluation");
+Console.WriteLine("═══════════════════════════════════════\n");
+var faithfulnessMetric = new FaithfulnessMetric(kernel, threshold: 0.5f, includeReason: false, maxConcurrency: 1);
+var faithfulnessResult = await faithfulnessMetric.EvaluteAsync(testCases);
+PrintResults("Faithfulness", faithfulnessResult);
 
-int index = 0;
-foreach (var result in testResults.OrderBy(r => r.Score))
+// ──────────────────────────────────────────────
+// Helper: print metric results
+// ──────────────────────────────────────────────
+static void PrintResults(string metricName, EvalutionResult evalResult)
 {
-    index++;
-    Console.WriteLine($"--- Result {index} ---");
-    Console.WriteLine($"Score:    {result.Score:F4}");
-    Console.WriteLine($"Passed:   {result.IsPassed}");
-    if (result.Reason is not null)
-        Console.WriteLine($"Reason:   {result.Reason}");
-    Console.WriteLine();
-}
+    var testResults = evalResult.TestResults.ToList();
 
-var passedCount = testResults.Count(r => r.IsPassed);
-var totalCount = testResults.Count;
-Console.WriteLine($"Summary: {passedCount}/{totalCount} passed ({(float)passedCount / totalCount:P1})");
+    int index = 0;
+    foreach (var result in testResults.OrderBy(r => r.Score))
+    {
+        index++;
+        Console.WriteLine($"--- Result {index} ---");
+        Console.WriteLine($"Score:    {result.Score:F4}");
+        Console.WriteLine($"Passed:   {result.IsPassed}");
+        if (result.Reason is not null)
+            Console.WriteLine($"Reason:   {result.Reason}");
+        Console.WriteLine();
+    }
+
+    var passedCount = testResults.Count(r => r.IsPassed);
+    var totalCount = testResults.Count;
+    var avgScore = testResults.Average(r => r.Score);
+    Console.WriteLine($"[{metricName}] Summary: {passedCount}/{totalCount} passed ({(float)passedCount / totalCount:P1})");
+    Console.WriteLine($"[{metricName}] Average Score: {avgScore:F4}\n");
+}
 
 public record JsonEntry(string question, string without_context_response, string docs_content, string with_context_response,string prerequisitesStatus);
