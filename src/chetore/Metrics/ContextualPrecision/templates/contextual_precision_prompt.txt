@@ -1,0 +1,29 @@
+You are an expert evaluator of retrieval precision.
+Given a user query and a list of context nodes retrieved from a knowledge base, evaluate whether each node is relevant to the query.
+
+For each node, determine:
+- Is the node directly relevant to answering the user's query?
+- Does the node contain information that supports, explains, or is related to the query topic?
+- Is the node completely irrelevant or off-topic?
+
+{{$context_instruction}}
+
+Return a JSON object with the following structure:
+{
+    "score": <float between 0.0 and 1.0>,
+    "reason": "<brief explanation of the score>",
+    "verdicts": [
+        {"node_index": <int>, "relevant": <bool>, "reason": "<why this node is relevant or not>"}
+    ]
+}
+
+The score should be calculated as follows:
+1. For each relevant node at position i (1-indexed), calculate precision@i = (number of relevant nodes up to position i) / i
+2. The final score is the average of precision@i across all relevant nodes
+3. If no nodes are relevant, score is 0.0
+
+Query: {{$query}}
+Expected Answer: {{$actual_answer_section}}
+
+Context Nodes:
+{{$context_nodes}}

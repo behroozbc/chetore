@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Chetore.Metrics;
 using Chetore.Metrics.AnswerRelevancy;
+using Chetore.Metrics.ContextualPrecision;
 using Chetore.Metrics.Faithfulness;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -120,6 +121,16 @@ Console.WriteLine("════════════════════�
 var faithfulnessMetric = new FaithfulnessMetric(kernel, threshold: 0.5f, includeReason: false, maxConcurrency: 1);
 var faithfulnessResult = await faithfulnessMetric.EvaluteAsync(testCases);
 PrintResults("Faithfulness", faithfulnessResult);
+
+// ──────────────────────────────────────────────
+// 3. Contextual Precision Evaluation
+// ──────────────────────────────────────────────
+Console.WriteLine("\n═══════════════════════════════════════");
+Console.WriteLine("  Contextual Precision Evaluation");
+Console.WriteLine("═══════════════════════════════════════\n");
+var contextualPrecisionMetric = new ContextualPrecisionMetric(kernel, threshold: 0.5f, includeReason: false, maxConcurrency: 1);
+var contextualPrecisionResult = await contextualPrecisionMetric.EvaluteAsync(testCases);
+PrintResults("Contextual Precision", contextualPrecisionResult);
 
 // ──────────────────────────────────────────────
 // Helper: print metric results
