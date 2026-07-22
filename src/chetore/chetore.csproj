@@ -15,6 +15,7 @@
     <EmbeddedResource Include="Metrics\AnswerRelevancy\templates\answer_relevancy_prompt.txt" />
     <EmbeddedResource Include="Metrics\Faithfulness\templates\faithfulness_prompt.txt" />
     <EmbeddedResource Include="Metrics\ContextualPrecision\templates\contextual_precision_prompt.txt" />
+    <EmbeddedResource Include="Metrics\ContextualRelevancy\templates\contextual_relevancy_prompt.txt" />
   </ItemGroup>
 
 </Project>

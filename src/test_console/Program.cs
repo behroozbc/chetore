@@ -2,6 +2,7 @@
 using Chetore.Metrics;
 using Chetore.Metrics.AnswerRelevancy;
 using Chetore.Metrics.ContextualPrecision;
+using Chetore.Metrics.ContextualRelevancy;
 using Chetore.Metrics.Faithfulness;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -98,7 +99,7 @@ var metric = new AnswerRelevancyMetric(kernel, threshold: 0.7f, includeReason: f
 // Build test cases
 var testCases = entries.Select(e => new LLMTestCase(
     Query: e.question,
-    ActualAnswer: e.with_context_response,
+    ActualAnswer: e.without_context_response,
     ExeptedAnswer: string.Empty,
     Context: e.docs_content + e.prerequisitesStatus
 ));
@@ -131,6 +132,16 @@ Console.WriteLine("════════════════════�
 var contextualPrecisionMetric = new ContextualPrecisionMetric(kernel, threshold: 0.5f, includeReason: false, maxConcurrency: 1);
 var contextualPrecisionResult = await contextualPrecisionMetric.EvaluteAsync(testCases);
 PrintResults("Contextual Precision", contextualPrecisionResult);
+
+// ──────────────────────────────────────────────
+// 4. Contextual Relevancy Evaluation
+// ──────────────────────────────────────────────
+Console.WriteLine("\n═══════════════════════════════════════");
+Console.WriteLine("  Contextual Relevancy Evaluation");
+Console.WriteLine("═══════════════════════════════════════\n");
+var contextualRelevancyMetric = new ContextualRelevancyMetric(kernel, threshold: 0.5f, includeReason: false, maxConcurrency: 1);
+var contextualRelevancyResult = await contextualRelevancyMetric.EvaluteAsync(testCases);
+PrintResults("Contextual Relevancy", contextualRelevancyResult);
 
 // ──────────────────────────────────────────────
 // Helper: print metric results
